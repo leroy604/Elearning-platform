@@ -1,0 +1,30 @@
+server:
+  port: 0   # Random port
+
+spring:
+  application:
+    name: exam-service
+  datasource:
+    url: jdbc:postgresql://${SPRING_DATASOURCE_HOST:postgres}:${SPRING_DATASOURCE_PORT:5432}/${SPRING_DATASOURCE_DATABASE:elearning}
+    username: ${SPRING_DATASOURCE_USERNAME:tagam}
+    password: ${SPRING_DATASOURCE_PASSWORD:tagam123}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        format_sql: true
+        use_sql_comments: true
+        jdbc:
+          batch_size: 20
+        order_inserts: true
+        order_updates: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+  instance:
+    prefer-ip-address: true

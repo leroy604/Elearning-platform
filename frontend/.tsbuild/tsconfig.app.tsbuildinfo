@@ -1,0 +1,1 @@
+{"root":["../src/app.tsx","../src/main.tsx","../src/api/auth.ts","../src/api/axiosclient.ts","../src/components/navbar.tsx","../src/context/authcontext.tsx","../src/pages/courses.tsx","../src/pages/exam.tsx","../src/pages/login.tsx","../src/pages/register.tsx"],"version":"5.9.3"}

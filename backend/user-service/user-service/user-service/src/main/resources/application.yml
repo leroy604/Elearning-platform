@@ -1,0 +1,26 @@
+server:
+  port: 0   # Random port (good for multiple instances)
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:postgresql://${SPRING_DATASOURCE_HOST:postgres}:${SPRING_DATASOURCE_PORT:5432}/${SPRING_DATASOURCE_DATABASE:elearning}
+    username: ${SPRING_DATASOURCE_USERNAME:tagam}
+    password: ${SPRING_DATASOURCE_PASSWORD:tagam123}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://discovery-service:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# JWT Configuration (we will use a secret key)
+jwt:
+  secret: your-super-secret-jwt-key-change-in-production-2026
+  expiration: 86400000   # 24 hours in milliseconds

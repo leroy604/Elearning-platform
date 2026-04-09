@@ -1,0 +1,125 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: elearning-postgres
+    environment:
+      POSTGRES_USER: tagam
+      POSTGRES_PASSWORD: tagam123
+      POSTGRES_DB: elearning
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tagam -d elearning"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  discovery-service:
+    build: ./discovery-service/discovery-service/discovery-service
+    container_name: discovery-service
+    ports:
+      - "8761:8761"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:8761/actuator/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  api-gateway:
+    build: ./api-gateway/api-gateway/api-gateway
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_APPLICATION_NAME: api-gateway
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  user-service:
+    build: ./user-service/user-service/user-service
+    container_name: user-service
+    environment:
+      SPRING_DATASOURCE_HOST: postgres
+      SPRING_DATASOURCE_PORT: 5432
+      SPRING_DATASOURCE_DATABASE: elearning
+      SPRING_DATASOURCE_USERNAME: tagam
+      SPRING_DATASOURCE_PASSWORD: tagam123
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  course-service:
+    build: ./course-service
+    container_name: course-service
+    environment:
+      SPRING_DATASOURCE_HOST: postgres
+      SPRING_DATASOURCE_PORT: 5432
+      SPRING_DATASOURCE_DATABASE: elearning
+      SPRING_DATASOURCE_USERNAME: tagam
+      SPRING_DATASOURCE_PASSWORD: tagam123
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  exam-service:
+    build: ./exam-service
+    container_name: exam-service
+    environment:
+      SPRING_DATASOURCE_HOST: postgres
+      SPRING_DATASOURCE_PORT: 5432
+      SPRING_DATASOURCE_DATABASE: elearning
+      SPRING_DATASOURCE_USERNAME: tagam
+      SPRING_DATASOURCE_PASSWORD: tagam123
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+      course-service:
+        condition: service_started
+    restart: unless-stopped
+
+  payment-service:
+    build: ./payment-service/payment-service/payment-service
+    container_name: payment-service
+    environment:
+      SPRING_DATASOURCE_HOST: postgres
+      SPRING_DATASOURCE_PORT: 5432
+      SPRING_DATASOURCE_DATABASE: elearning
+      SPRING_DATASOURCE_USERNAME: tagam
+      SPRING_DATASOURCE_PASSWORD: tagam123
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+    depends_on:
+      postgres:
+        condition: service_healthy
+      discovery-service:
+        condition: service_healthy
+    restart: unless-stopped
+
+  frontend:
+    build: ../frontend
+    container_name: elearning-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - api-gateway
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
