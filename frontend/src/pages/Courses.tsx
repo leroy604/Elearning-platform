@@ -8,7 +8,7 @@ interface Course {
   title: string;
   description: string;
   price: number;
-  instructorName: string;
+  instructor: string;
 }
 
 const DEMO_COURSES: Course[] = [
@@ -17,21 +17,21 @@ const DEMO_COURSES: Course[] = [
     title: 'React Fundamentals',
     description: 'Build modern UIs with components, hooks, routing, and best practices. Perfect for getting productive fast.',
     price: 29,
-    instructorName: 'Amina K.',
+    instructor: 'Amina K.',
   },
   {
     id: 2,
     title: 'Java + Spring Boot Microservices',
     description: 'Design resilient services with discovery, gateway routing, auth, and data persistence. Hands-on and practical.',
     price: 49,
-    instructorName: 'David N.',
+    instructor: 'David N.',
   },
   {
     id: 3,
     title: 'PostgreSQL for Developers',
     description: 'Data modeling, indexing, queries, and performance tuning—everything you need for real production apps.',
     price: 39,
-    instructorName: 'Sarah M.',
+    instructor: 'Sarah M.',
   },
 ];
 
@@ -66,7 +66,7 @@ const Courses = () => {
     setEnrolling(courseId);
     const userId = user?.id || 0;
     try {
-      await axiosClient.post('/courses/enroll', { courseId, userId });
+      await axiosClient.post('/enrollments', { courseId, userId });
       alert('🎉 Enrollment initiated! Complete payment to access the course.');
     } catch (err: unknown) {
       const message = axios.isAxiosError(err)
@@ -139,9 +139,9 @@ const Courses = () => {
                 <div className="course-meta">
                   <div className="course-instructor">
                     <div className="instructor-avatar">
-                      {course.instructorName.charAt(0).toUpperCase()}
+                      {course.instructor?.charAt(0).toUpperCase() || 'U'}
                     </div>
-                    <span>{course.instructorName}</span>
+                    <span>{course.instructor || 'Unknown Instructor'}</span>
                   </div>
                 </div>
 

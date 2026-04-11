@@ -1,3 +1,4 @@
+import axios from 'axios';
 import axiosClient from './axiosClient';
 import type { AxiosResponse } from 'axios';
 
@@ -73,7 +74,8 @@ function toAxiosResponse<T>(data: T): AxiosResponse<T> {
 export async function loginUser(payload: LoginRequest): Promise<AxiosResponse<AuthResponse>> {
   try {
     return await axiosClient.post<AuthResponse>('/auth/login', payload);
-  } catch {
+  } catch (err) {
+    console.error('Login request failed. Checking demo mode fallback...', err);
     const users = loadDemoUsers();
     const found = users.find(
       (u) =>
@@ -83,7 +85,15 @@ export async function loginUser(payload: LoginRequest): Promise<AxiosResponse<Au
     );
 
     if (!found) {
-      throw new Error('Invalid credentials (backend unreachable; checked local demo users).');
+      let isNetworkError = true;
+      if (axios.isAxiosError(err)) {
+        isNetworkError = !err.response;
+      }
+      throw new Error(
+        isNetworkError
+          ? 'Backend unreachable. Please ensure the API Gateway and User Service are running.'
+          : 'Invalid credentials.'
+      );
     }
 
     const token = makeDemoToken(found.user);
@@ -94,7 +104,8 @@ export async function loginUser(payload: LoginRequest): Promise<AxiosResponse<Au
 export async function registerUser(payload: RegisterRequest): Promise<AxiosResponse<AuthResponse>> {
   try {
     return await axiosClient.post<AuthResponse>('/auth/register', payload);
-  } catch {
+  } catch (err) {
+    console.error('Registration failed. Checking demo mode fallback...', err);
     const users = loadDemoUsers();
     const emailLower = payload.email.toLowerCase();
     const usernameLower = payload.username.toLowerCase();
@@ -103,7 +114,15 @@ export async function registerUser(payload: RegisterRequest): Promise<AxiosRespo
       (u) => u.user.email.toLowerCase() === emailLower || u.user.username.toLowerCase() === usernameLower
     );
     if (exists) {
-      throw new Error('User already exists (backend unreachable; checked local demo users).');
+      let isNetworkError = true;
+      if (axios.isAxiosError(err)) {
+        isNetworkError = !err.response;
+      }
+      throw new Error(
+        isNetworkError
+          ? 'Backend unreachable. Please ensure the API Gateway and User Service are running.'
+          : 'User already exists (demo mode).'
+      );
     }
 
     const now = new Date().toISOString();
