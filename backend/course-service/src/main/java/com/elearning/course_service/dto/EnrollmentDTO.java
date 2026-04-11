@@ -16,4 +16,5 @@ public class EnrollmentDTO {
     private Long userId;
     private Long courseId;
     private LocalDateTime enrolledAt;
+    private String status;
 }

@@ -29,4 +29,10 @@ public class EnrollmentController {
         List<EnrollmentDTO> enrollments = enrollmentService.getEnrollmentsByUser(userId);
         return ResponseEntity.ok(enrollments);
     }
+
+    @PutMapping("/{id}/status")
+    public ResponseEntity<EnrollmentDTO> updateStatus(@PathVariable Long id, @RequestParam String status) {
+        EnrollmentDTO enrollment = enrollmentService.updateEnrollmentStatus(id, status);
+        return ResponseEntity.ok(enrollment);
+    }
 }

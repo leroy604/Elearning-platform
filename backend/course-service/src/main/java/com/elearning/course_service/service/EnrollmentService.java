@@ -27,6 +27,7 @@ public class EnrollmentService {
         enrollment.setUserId(request.getUserId());
         enrollment.setCourseId(request.getCourseId());
         enrollment.setEnrolledAt(LocalDateTime.now());
+        enrollment.setStatus("PENDING");
 
         EnrollmentEntity saved = enrollmentRepository.save(enrollment);
         return toDto(saved);
@@ -38,12 +39,21 @@ public class EnrollmentService {
                 .collect(Collectors.toList());
     }
 
+    public EnrollmentDTO updateEnrollmentStatus(Long id, String status) {
+        EnrollmentEntity enrollment = enrollmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Enrollment not found"));
+        enrollment.setStatus(status);
+        EnrollmentEntity saved = enrollmentRepository.save(enrollment);
+        return toDto(saved);
+    }
+
     private EnrollmentDTO toDto(EnrollmentEntity entity) {
         return EnrollmentDTO.builder()
                 .id(entity.getId())
                 .userId(entity.getUserId())
                 .courseId(entity.getCourseId())
                 .enrolledAt(entity.getEnrolledAt())
+                .status(entity.getStatus())
                 .build();
     }
 }

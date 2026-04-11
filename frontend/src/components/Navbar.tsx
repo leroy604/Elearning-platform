@@ -30,12 +30,14 @@ const Navbar = () => {
             </Link>
 
             {isAuthenticated && (
-              <Link
-                to="/profile"
-                className="navbar-link"
-              >
-                My Learning
-              </Link>
+              <>
+                <Link to="/profile" className="navbar-link">
+                  My Learning
+                </Link>
+                <Link to="/instructor-dashboard" className="navbar-link text-blue-400 font-bold hover:text-blue-300">
+                  Teach
+                </Link>
+              </>
             )}
           </div>
 

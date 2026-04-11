@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../context/AuthContext';
 
@@ -9,6 +10,12 @@ interface Course {
   description: string;
   price: number;
   instructor: string;
+}
+
+interface Enrollment {
+  id: number;
+  courseId: number;
+  status: string;
 }
 
 const DEMO_COURSES: Course[] = [
@@ -37,37 +44,48 @@ const DEMO_COURSES: Course[] = [
 
 const Courses = () => {
   const [courses, setCourses] = useState<Course[]>([]);
+  const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState<number | null>(null);
 
   const { user, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchCourses = async () => {
+    const fetchData = async () => {
       try {
-        const res = await axiosClient.get('/courses');
-        setCourses(res.data);
+        const [coursesRes, enrollmentsRes] = await Promise.all([
+          axiosClient.get('/courses'),
+          isAuthenticated && user?.id ? axiosClient.get(`/enrollments/user/${user.id}`) : Promise.resolve({ data: [] })
+        ]);
+        setCourses(coursesRes.data);
+        setEnrollments(enrollmentsRes.data);
       } catch (err) {
-        console.warn('Failed to fetch courses; showing demo courses.', err);
+        console.warn('Failed to fetch data; showing demo courses.', err);
         setCourses(DEMO_COURSES);
       } finally {
         setLoading(false);
       }
     };
-    fetchCourses();
-  }, []);
+    fetchData();
+  }, [isAuthenticated, user?.id]);
 
   const handleEnroll = async (courseId: number) => {
     if (!isAuthenticated) {
       alert('Please login to enroll in courses');
+      navigate('/login');
       return;
     }
 
     setEnrolling(courseId);
     const userId = user?.id || 0;
     try {
-      await axiosClient.post('/enrollments', { courseId, userId });
-      alert('🎉 Enrollment initiated! Complete payment to access the course.');
+      const res = await axiosClient.post('/enrollments', { courseId, userId });
+      const newEnrollment = res.data;
+      setEnrollments([...enrollments, newEnrollment]);
+      
+      // Redirect to payment page with courseId
+      navigate(`/payment/${newEnrollment.id}?courseId=${courseId}`);
     } catch (err: unknown) {
       const message = axios.isAxiosError(err)
         ? err.response?.data?.message
@@ -78,6 +96,10 @@ const Courses = () => {
     } finally {
       setEnrolling(null);
     }
+  };
+
+  const getEnrollmentForCourse = (courseId: number) => {
+    return enrollments.find(e => e.courseId === courseId);
   };
 
   if (loading) {
@@ -122,51 +144,73 @@ const Courses = () => {
       {/* Courses Grid */}
       <div className="max-w-7xl mx-auto">
         <div className="courses-grid">
-          {courses.map((course, index) => (
-            <div
-              key={course.id}
-              className="course-card animate-fade-in"
-              style={{ animationDelay: `${index * 0.1}s` }}
-            >
-              <div className="course-header">
-                <h3 className="course-title">{course.title}</h3>
-                <div className="course-price">${course.price}</div>
-              </div>
+          {courses.map((course, index) => {
+            const enrollment = getEnrollmentForCourse(course.id);
+            const isCompleted = enrollment?.status === 'COMPLETED';
+            const isPending = enrollment?.status === 'PENDING';
 
-              <div className="course-content">
-                <p className="course-description">{course.description}</p>
-
-                <div className="course-meta">
-                  <div className="course-instructor">
-                    <div className="instructor-avatar">
-                      {course.instructor?.charAt(0).toUpperCase() || 'U'}
-                    </div>
-                    <span>{course.instructor || 'Unknown Instructor'}</span>
-                  </div>
+            return (
+              <div
+                key={course.id}
+                className="course-card animate-fade-in"
+                style={{ animationDelay: `${index * 0.1}s` }}
+              >
+                <div className="course-header">
+                  <h3 className="course-title">{course.title}</h3>
+                  <div className="course-price">${course.price}</div>
                 </div>
 
-                <button
-                  onClick={() => handleEnroll(course.id)}
-                  disabled={enrolling === course.id}
-                  className="enroll-button disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {enrolling === course.id ? (
-                    <div className="flex items-center justify-center">
-                      <div className="spinner w-5 h-5 mr-2"></div>
-                      Enrolling...
+                <div className="course-content">
+                  <p className="course-description">{course.description}</p>
+
+                  <div className="course-meta">
+                    <div className="course-instructor">
+                      <div className="instructor-avatar">
+                        {course.instructor?.charAt(0).toUpperCase() || 'U'}
+                      </div>
+                      <span>{course.instructor || 'Unknown Instructor'}</span>
                     </div>
+                  </div>
+
+                  {isCompleted ? (
+                    <button
+                      onClick={() => navigate(`/course/${course.id}/dashboard`)}
+                      className="enroll-button bg-green-600 hover:bg-green-700"
+                    >
+                      🎓 Enter Course
+                    </button>
+                  ) : isPending ? (
+                    <button
+                      onClick={() => navigate(`/payment/${enrollment.id}?courseId=${course.id}`)}
+                      className="enroll-button bg-yellow-600 hover:bg-yellow-700"
+                    >
+                      💳 Complete Payment
+                    </button>
                   ) : (
-                    '🚀 Enroll Now'
+                    <button
+                      onClick={() => handleEnroll(course.id)}
+                      disabled={enrolling === course.id}
+                      className="enroll-button disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {enrolling === course.id ? (
+                        <div className="flex items-center justify-center">
+                          <div className="spinner w-5 h-5 mr-2"></div>
+                          Enrolling...
+                        </div>
+                      ) : (
+                        '🚀 Enroll Now'
+                      )}
+                    </button>
                   )}
-                </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {courses.length === 0 && (
           <div className="text-center py-16">
-            <div className="text-6xl mb-4">📚</div>
+            <div className="text-4xl mb-4">📚</div>
             <h3 className="text-2xl font-bold text-white mb-2">No courses available yet</h3>
             <p className="text-white/70">Check back soon for new learning opportunities!</p>
           </div>
@@ -176,4 +220,4 @@ const Courses = () => {
   );
 };
 
-export default Courses;
+export default Courses;
