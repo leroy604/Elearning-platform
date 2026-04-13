@@ -1,5 +1,5 @@
 server:
-  port: 0   # Random port
+  port: 8083
 
 spring:
   application:
@@ -28,3 +28,4 @@ eureka:
       defaultZone: http://discovery-service:8761/eureka/
   instance:
     prefer-ip-address: true
+    instance-id: ${spring.application.name}:${spring.application.instance_id:${random.value}}

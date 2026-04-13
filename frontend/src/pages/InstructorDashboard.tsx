@@ -14,7 +14,6 @@ const InstructorDashboard = () => {
     const { user } = useAuth();
     const [courses, setCourses] = useState<Course[]>([]);
     const [loading, setLoading] = useState(true);
-    const [scrolled, setScrolled] = useState(false);
     
     // New Course Form State
     const [courseForm, setCourseForm] = useState({
@@ -52,10 +51,6 @@ const InstructorDashboard = () => {
         };
 
         fetchCourses();
-
-        const handleScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
     }, [user?.id]);
 
     const handleCourseSubmit = async (e: React.FormEvent) => {
@@ -90,7 +85,7 @@ const InstructorDashboard = () => {
             return;
         }
         try {
-            await axiosClient.post('/api/exams', {
+            await axiosClient.post('/exams', {
                 ...examForm,
                 courseId: Number(examForm.courseId)
             });

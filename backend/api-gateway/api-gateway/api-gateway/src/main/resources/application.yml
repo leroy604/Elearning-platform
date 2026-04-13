@@ -18,15 +18,15 @@ spring:
         - id: course-service
           uri: lb://course-service
           predicates:
-            - Path=/api/courses/**, /api/enrollments/**
+            - Path=/api/courses/**, /api/enrollments/**, /api/enrollments
         - id: exam-service
           uri: lb://exam-service
           predicates:
-            - Path=/api/exams/**
+            - Path=/api/exams/**, /api/exams
         - id: payment-service
           uri: lb://payment-service
           predicates:
-            - Path=/api/payments/**
+            - Path=/api/payments/**, /api/payments
 
 eureka:
   client:

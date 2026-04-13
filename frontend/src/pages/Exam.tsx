@@ -61,7 +61,7 @@ const Exam = () => {
         const fetchExam = async () => {
             try {
                 // Fetch exams for this course
-                const res = await axiosClient.get(`/api/exams/course/${examId}`);
+                const res = await axiosClient.get(`/exams/course/${examId}`);
                 if (res.data && res.data.length > 0) {
                     setExam(res.data[0]); // Take the first exam found
                 }
