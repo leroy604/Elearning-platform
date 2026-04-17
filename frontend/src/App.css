@@ -1,227 +1,46 @@
-/* App-specific styles */
+/* App.css — page-specific overrides that don't belong in the global system */
 
-/* Page transitions */
-.page-enter {
-  opacity: 0;
-  transform: translateY(20px);
+/* ─── Courses page label alignment ─── */
+.course-instructor span { line-height:1; }
+
+/* ─── Exam progress bar ─── */
+.exam-progress { height:4px; background:rgba(255,255,255,.08); border-radius:2px; overflow:hidden; }
+.exam-progress-bar { height:100%; border-radius:2px; background:linear-gradient(90deg,var(--blue),var(--indigo)); transition:width .4s ease; }
+
+/* ─── Question nav dots ─── */
+.q-dot {
+  width:30px; height:30px; border-radius:7px;
+  font-size:.75rem; font-weight:700; cursor:pointer;
+  border:1px solid var(--border); background:rgba(255,255,255,.05);
+  color:var(--text-2); transition:all .15s;
+}
+.q-dot:hover { background:rgba(255,255,255,.1); color:var(--text); }
+.q-dot.q-dot-current { background:var(--blue); border-color:var(--blue); color:#fff; }
+.q-dot.q-dot-answered { background:rgba(5,150,105,.2); border-color:rgba(5,150,105,.4); color:#34d399; }
+
+/* ─── Score ring ─── */
+.score-ring {
+  position:relative; width:140px; height:140px; border-radius:50%;
+  display:flex; align-items:center; justify-content:center;
+  margin:0 auto;
+}
+.score-ring-inner {
+  width:104px; height:104px; border-radius:50%;
+  background:var(--bg-1);
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  position:relative; z-index:1;
 }
 
-.page-enter-active {
-  opacity: 1;
-  transform: translateY(0);
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
+/* ─── Instructor dashboard tabs ─── */
+.ins-tab {
+  padding:.5rem 1rem; border-radius:7px; border:none;
+  font-size:.875rem; font-weight:600; cursor:pointer;
+  background:transparent; color:var(--text-2); transition:all .2s;
 }
+.ins-tab.active { background:rgba(37,99,235,.15); color:#60a5fa; }
+.ins-tab:hover:not(.active) { background:rgba(255,255,255,.06); color:var(--text); }
 
-.page-exit {
-  opacity: 1;
-  transform: translateY(0);
+/* ─── Responsive tweaks ─── */
+@media(max-width:768px) {
+  .hide-mobile { display:none !important; }
 }
-
-.page-exit-active {
-  opacity: 0;
-  transform: translateY(-20px);
-  transition: opacity 0.3s ease-out, transform 0.3s ease-out;
-}
-
-/* Courses Page */
-.courses-wrapper {
-  min-height: 100vh;
-  padding: 2.5rem 1.25rem 3.5rem;
-}
-
-.hero-title {
-  font-size: clamp(2rem, 3.6vw, 3.1rem);
-  font-weight: 800;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  margin-bottom: 1rem;
-}
-
-.hero-subtitle {
-  color: rgba(255, 255, 255, 0.88);
-  max-width: 40rem;
-  margin: 0 auto;
-  line-height: 1.8;
-}
-
-.stats-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 1rem;
-  margin-top: 1.75rem;
-}
-
-.stat-card {
-  background: rgba(255, 255, 255, 0.12);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 1.25rem;
-  padding: 1.15rem;
-  backdrop-filter: blur(16px);
-  box-shadow: 0 22px 40px rgba(15, 23, 42, 0.18);
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
-
-.stat-card:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 28px 50px rgba(15, 23, 42, 0.22);
-}
-
-.stat-number {
-  font-size: 2.1rem;
-  font-weight: 800;
-  color: #60a5fa;
-  margin-bottom: 0.5rem;
-}
-
-.stat-label {
-  color: rgba(255, 255, 255, 0.78);
-  font-weight: 500;
-}
-
-.courses-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(310px, 1fr));
-  gap: 1.25rem;
-  margin-top: 2rem;
-}
-
-.course-card {
-  background: rgba(255, 255, 255, 0.95);
-  border-radius: 1.25rem;
-  overflow: hidden;
-  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.16);
-  transition: transform 0.35s ease, box-shadow 0.35s ease;
-}
-
-.course-card:hover {
-  transform: translateY(-8px);
-}
-
-.course-header {
-  position: relative;
-  padding: 1.35rem 1.35rem 1.15rem;
-  background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-  color: white;
-}
-
-.course-header::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at top right, rgba(255, 255, 255, 0.16), transparent 40%);
-  opacity: 0.85;
-}
-
-.course-title,
-.course-price {
-  position: relative;
-  z-index: 1;
-}
-
-.course-title {
-  font-size: 1.25rem;
-  font-weight: 800;
-  margin-bottom: 0.6rem;
-}
-
-.course-price {
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: #fde68a;
-}
-
-.course-content {
-  padding: 1.2rem 1.35rem 1.35rem;
-}
-
-.course-description {
-  color: #475569;
-  margin-bottom: 1rem;
-  line-height: 1.75;
-}
-
-.course-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1.1rem;
-  color: #64748b;
-}
-
-.instructor-avatar {
-  width: 32px;
-  height: 32px;
-  border-radius: 9999px;
-  background: linear-gradient(135deg, #3b82f6, #10b981);
-  color: white;
-  display: grid;
-  place-items: center;
-  font-weight: 700;
-  font-size: 0.85rem;
-}
-
-.enroll-button {
-  width: 100%;
-  padding: 0.85rem 1rem;
-  border-radius: 0.9rem;
-  border: none;
-  color: white;
-  font-weight: 700;
-  background: linear-gradient(135deg, #22c55e, #16a34a);
-  cursor: pointer;
-  transition: transform 0.3s ease, box-shadow 0.3s ease;
-  position: relative;
-  overflow: hidden;
-}
-
-.enroll-button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 18px 30px rgba(16, 185, 129, 0.24);
-}
-
-.enroll-button::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: -105%;
-  width: 120%;
-  height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
-  transition: left 0.45s ease;
-}
-
-.enroll-button:hover::before {
-  left: 105%;
-}
-
-.spinner {
-  border: 3px solid rgba(148, 163, 184, 0.3);
-  border-top-color: white;
-  border-radius: 9999px;
-  width: 1.15rem;
-  height: 1.15rem;
-  animation: spin 0.9s linear infinite;
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (max-width: 768px) {
-  .courses-wrapper {
-    padding-top: 2.1rem;
-    padding-bottom: 3rem;
-  }
-
-  .hero-title {
-    font-size: 2.15rem;
-  }
-
-  .courses-grid {
-    grid-template-columns: 1fr;
-  }
-}
-

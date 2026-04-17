@@ -12,6 +12,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import java.util.Map;
+import com.elearning.exam_service.dto.QuestionDTO;
+import com.elearning.exam_service.dto.SubmitExamRequest;
+import com.elearning.exam_service.dto.ExamResultDTO;
+import com.elearning.exam_service.entity.QuestionEntity;
+import com.elearning.exam_service.repository.QuestionRepository;
 
 @Service
 @Transactional
@@ -19,6 +25,9 @@ public class ExamService {
     
     @Autowired
     private ExamRepository examRepository;
+
+    @Autowired
+    private QuestionRepository questionRepository;
     
     public ExamDTO createExam(CreateExamRequest request) {
         ExamEntity exam = new ExamEntity();
@@ -96,5 +105,45 @@ public class ExamService {
                 exam.getCreatedAt(),
                 exam.getUpdatedAt()
         );
+    }
+
+    public QuestionDTO addQuestion(Long examId, QuestionDTO request) {
+        if (!examRepository.existsById(examId)) {
+            throw new ExamNotFoundException("Exam not found with ID: " + examId);
+        }
+        QuestionEntity entity = new QuestionEntity();
+        entity.setExamId(examId);
+        entity.setContent(request.getContent());
+        entity.setOptions(request.getOptions());
+        entity.setCorrectAnswerIndex(request.getCorrectAnswerIndex());
+
+        QuestionEntity saved = questionRepository.save(entity);
+        return new QuestionDTO(saved.getId(), saved.getExamId(), saved.getContent(), saved.getOptions(), saved.getCorrectAnswerIndex());
+    }
+
+    public List<QuestionDTO> getExamQuestions(Long examId) {
+        return questionRepository.findByExamId(examId).stream()
+                .map(q -> new QuestionDTO(q.getId(), q.getExamId(), q.getContent(), q.getOptions(), q.getCorrectAnswerIndex()))
+                .collect(Collectors.toList());
+    }
+
+    public ExamResultDTO submitExam(Long examId, SubmitExamRequest request) {
+        ExamEntity exam = examRepository.findById(examId)
+                .orElseThrow(() -> new ExamNotFoundException("Exam not found"));
+
+        List<QuestionEntity> questions = questionRepository.findByExamId(examId);
+        int correct = 0;
+        for (QuestionEntity q : questions) {
+            Integer studentAnswer = request.getAnswers().get(q.getId());
+            if (studentAnswer != null && studentAnswer.equals(q.getCorrectAnswerIndex())) {
+                correct++;
+            }
+        }
+        
+        int totalQuestions = questions.size();
+        int scorePercentage = totalQuestions == 0 ? 0 : (correct * 100) / totalQuestions;
+        boolean passed = scorePercentage >= exam.getPassingScore();
+
+        return new ExamResultDTO(examId, totalQuestions, correct, scorePercentage, passed);
     }
 }

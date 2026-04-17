@@ -2,227 +2,168 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+type Role = 'STUDENT' | 'INSTRUCTOR';
+
 const Register = () => {
-  const { register, isLoading: authLoading } = useAuth();
-  const [formData, setFormData] = useState({
-    username: 'leroy',
-    email: 'leroy@gmail.com',
-    password: 'leroy123',
-    firstName: 'leroy',
-    lastName: 'lisa'
-  });
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  const [loading, setLoading] = useState(false);
-  const navigate = useNavigate();
+    const { register, isLoading: authLoading } = useAuth();
+    const navigate = useNavigate();
+    const [role, setRole] = useState<Role>('STUDENT');
+    const [form, setForm] = useState({ username:'', email:'', password:'', firstName:'', lastName:'' });
+    const [showPw, setShowPw] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
+    const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (authLoading) return;
-    if (localStorage.getItem('token')) {
-      navigate('/');
-    }
-  }, [navigate, authLoading]);
+    useEffect(() => {
+        if (authLoading) return;
+        if (localStorage.getItem('token')) navigate('/');
+    }, [navigate, authLoading]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value
-    });
-  };
+    const handleChange = (e: React.ChangeEvent<HTMLInputElement>) =>
+        setForm({ ...form, [e.target.name]: e.target.value });
 
-  const handleRegister = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-    setSuccess('');
+    const submit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setLoading(true); setError(''); setSuccess('');
+        try {
+            await register({ ...form, role });
+            setSuccess('Account created! Redirecting...');
+            setTimeout(() => navigate(role === 'INSTRUCTOR' ? '/instructor-dashboard' : '/'), 1200);
+        } catch (err: unknown) {
+            setError(err instanceof Error ? err.message : 'Registration failed.');
+        } finally { setLoading(false); }
+    };
 
-    try {
-      await register(formData);
-      setSuccess('🎉 Registration successful! You are now logged in. Redirecting...');
-      setTimeout(() => {
-        navigate('/');
-      }, 1000);
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Registration failed. Please try again.';
-      setError(message);
-      setSuccess('');
-    } finally {
-      setLoading(false);
-    }
-  };
+    const isInstructor = role === 'INSTRUCTOR';
+    const submitBg = isInstructor ? 'linear-gradient(135deg,#4f46e5,#6366f1)' : 'linear-gradient(135deg,#1d4ed8,#2563eb)';
+    const submitShadow = isInstructor ? '0 4px 20px rgba(99,102,241,.35)' : '0 4px 20px rgba(37,99,235,.35)';
 
-  return (
-    <div className="min-h-screen flex items-center justify-center px-4 sm:px-6 lg:px-8 py-8">
-      <div className="max-w-md w-full space-y-8 animate-fade-in">
-        {/* Header */}
-        <div className="text-center">
-          <div className="mx-auto w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-2xl flex items-center justify-center mb-4">
-            <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-            </svg>
-          </div>
-          <h2 className="text-3xl font-bold text-white mb-2">Join LearnHub</h2>
-          <p className="text-white/70">Start your learning journey today</p>
+    const Field = ({ label, name, type='text', placeholder }: { label:string; name:string; type?:string; placeholder:string }) => (
+        <div>
+            <label style={{ fontSize:'.75rem', fontWeight:600, color:'var(--text-2)', display:'block', marginBottom:'.35rem' }}>{label}</label>
+            <input
+                name={name} type={type} placeholder={placeholder}
+                value={(form as any)[name]} onChange={handleChange}
+                className={`auth-input ${isInstructor ? 'focus-indigo':''}`}
+                required disabled={loading}
+            />
         </div>
+    );
 
-        {/* Register Form */}
-        <div className="card-glass">
-          {error && (
-            <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-xl">
-              <div className="flex items-center">
-                <svg className="w-5 h-5 text-red-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-red-400 text-sm font-medium">{error}</p>
-              </div>
-            </div>
-          )}
+    return (
+        <div className="auth-bg">
+            <div className="auth-glow-1" />
+            <div className="auth-glow-2" />
 
-          {success && (
-            <div className="mb-6 p-4 bg-green-500/10 border border-green-500/20 rounded-xl">
-              <div className="flex items-center">
-                <svg className="w-5 h-5 text-green-400 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <p className="text-green-400 text-sm font-medium">{success}</p>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={handleRegister} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <label htmlFor="firstName" className="block text-sm font-medium text-white/90 mb-2">
-                  First Name
-                </label>
-                <input
-                  id="firstName"
-                  type="text"
-                  name="firstName"
-                  placeholder="John"
-                  value={formData.firstName}
-                  onChange={handleChange}
-                  className="form-input"
-                  required
-                  disabled={loading}
-                />
-              </div>
-              <div>
-                <label htmlFor="lastName" className="block text-sm font-medium text-white/90 mb-2">
-                  Last Name
-                </label>
-                <input
-                  id="lastName"
-                  type="text"
-                  name="lastName"
-                  placeholder="Doe"
-                  value={formData.lastName}
-                  onChange={handleChange}
-                  className="form-input"
-                  required
-                  disabled={loading}
-                />
-              </div>
-            </div>
-
-            <div>
-              <label htmlFor="username" className="block text-sm font-medium text-white/90 mb-2">
-                Username
-              </label>
-              <input
-                id="username"
-                type="text"
-                name="username"
-                placeholder="leroy"
-                value={formData.username}
-                onChange={handleChange}
-                className="form-input"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-white/90 mb-2">
-                Email Address
-              </label>
-              <input
-                id="email"
-                type="email"
-                name="email"
-                placeholder="john@example.com"
-                value={formData.email}
-                onChange={handleChange}
-                className="form-input"
-                required
-                disabled={loading}
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-white/90 mb-2">
-                Password
-              </label>
-              <input
-                id="password"
-                type="password"
-                name="password"
-                placeholder="Create a strong password"
-                value={formData.password}
-                onChange={handleChange}
-                className="form-input"
-                required
-                disabled={loading}
-                minLength={6}
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="btn-success w-full disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
-            >
-              {loading ? (
-                <div className="flex items-center justify-center">
-                  <div className="spinner w-5 h-5 mr-2"></div>
-                  Creating Account...
+            <div className="auth-card animate-fade-in" style={{ maxWidth: 520 }}>
+                {/* Brand */}
+                <div style={{ textAlign:'center', marginBottom:'1.5rem' }}>
+                    <div className="auth-logo" style={{ marginBottom:'.75rem' }}>
+                        <svg width="26" height="26" fill="none" stroke="#60a5fa" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
+                        </svg>
+                    </div>
+                    <h1 style={{ fontSize:'1.65rem', fontWeight:800, color:'var(--text)' }}>Create Account</h1>
+                    <p style={{ color:'var(--text-3)', fontSize:'.875rem', marginTop:'.3rem' }}>Join LearnHub and start learning today</p>
                 </div>
-              ) : (
-                '🎯 Create Account'
-              )}
-            </button>
-          </form>
 
-          {/* Login Link */}
-          <div className="mt-6 text-center">
-            <p className="text-white/70 text-sm">
-              Already have an account?{' '}
-              <Link
-                to="/login"
-                className="text-green-300 hover:text-green-200 font-medium hover:underline transition-colors"
-              >
-                Sign in here
-              </Link>
-            </p>
-          </div>
-        </div>
+                <div className="auth-glass">
+                    {/* Role selector */}
+                    <p style={{ fontSize:'.7rem', fontWeight:700, color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:'.625rem' }}>
+                        I want to join as
+                    </p>
+                    <div className="auth-role-grid" style={{ marginBottom:'1.25rem' }}>
+                        {(['STUDENT','INSTRUCTOR'] as Role[]).map(r => {
+                            const active = role === r;
+                            const cls = active ? (r==='INSTRUCTOR' ? 'active-indigo' : 'active-blue') : '';
+                            return (
+                                <button key={r} type="button" className={`auth-role-btn ${cls}`} onClick={() => setRole(r)}>
+                                    {active && <span className="auth-role-dot" style={{ background: r==='INSTRUCTOR' ? '#818cf8':'#60a5fa' }} />}
+                                    {r === 'STUDENT'
+                                        ? <svg width="22" height="22" fill="none" stroke={active?'#60a5fa':'var(--text-3)'} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                                        : <svg width="22" height="22" fill="none" stroke={active?'#818cf8':'var(--text-3)'} viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+                                    }
+                                    <span style={{ fontSize:'.85rem', fontWeight:600, color: active?(r==='INSTRUCTOR'?'#a5b4fc':'#93c5fd'):'var(--text-2)' }}>
+                                        {r==='STUDENT'?'Student':'Instructor'}
+                                    </span>
+                                    <span style={{ fontSize:'.7rem', color:'var(--text-3)', marginTop:'-.25rem' }}>
+                                        {r==='STUDENT'?'Learn at your pace':'Teach & create courses'}
+                                    </span>
+                                </button>
+                            );
+                        })}
+                    </div>
 
-        {/* Footer */}
-        <div className="text-center">
-          <p className="text-white/50 text-sm">
-            By creating an account, you agree to our{' '}
-            <button className="text-green-300 hover:text-green-200 hover:underline">
-              Terms of Service
-            </button>{' '}
-            and{' '}
-            <button className="text-green-300 hover:text-green-200 hover:underline">
-              Privacy Policy
-            </button>
-          </p>
+                    <div className="auth-divider">
+                        <div className="auth-divider-line" />
+                        <span className="auth-divider-text">account details</span>
+                        <div className="auth-divider-line" />
+                    </div>
+
+                    {error && <div className="auth-err" style={{ marginBottom:'1rem' }}>
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                        {error}
+                    </div>}
+                    {success && <div className="auth-ok" style={{ marginBottom:'1rem' }}>
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                        {success}
+                    </div>}
+
+                    <form onSubmit={submit} style={{ display:'flex', flexDirection:'column', gap:'.75rem' }}>
+                        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'.75rem' }}>
+                            <Field label="First Name" name="firstName" placeholder="John" />
+                            <Field label="Last Name"  name="lastName"  placeholder="Doe"  />
+                        </div>
+                        <Field label="Username" name="username" placeholder="johndoe123" />
+                        <Field label="Email Address" name="email" type="email" placeholder="john@example.com" />
+
+                        {/* Password with toggle */}
+                        <div>
+                            <label style={{ fontSize:'.75rem', fontWeight:600, color:'var(--text-2)', display:'block', marginBottom:'.35rem' }}>Password</label>
+                            <div style={{ position:'relative' }}>
+                                <span style={{ position:'absolute', left:'.875rem', top:'50%', transform:'translateY(-50%)' }}>
+                                    <svg width="14" height="14" fill="none" stroke="var(--text-3)" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                </span>
+                                <input
+                                    name="password" type={showPw?'text':'password'}
+                                    value={form.password} onChange={handleChange}
+                                    placeholder="••••••••" minLength={6}
+                                    className={`auth-input ${isInstructor?'focus-indigo':''}`}
+                                    style={{ paddingLeft:'2.5rem', paddingRight:'2.75rem' }}
+                                    required disabled={loading}
+                                />
+                                <button type="button" onClick={() => setShowPw(!showPw)}
+                                    style={{ position:'absolute', right:'.875rem', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--text-3)', display:'flex', padding:0 }}>
+                                    <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        {showPw
+                                            ? <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.046m4.577-4.577A9.956 9.956 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21m-4.225-4.225L3 3" />
+                                            : <><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></>
+                                        }
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+
+                        <button type="submit" disabled={loading} className="auth-submit"
+                            style={{ background:submitBg, boxShadow:submitShadow, marginTop:'.25rem' }}>
+                            {loading
+                                ? <><div className="spinner" /> Creating account...</>
+                                : <><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" /></svg>
+                                Register as {isInstructor?'Instructor':'Student'}</>
+                            }
+                        </button>
+                    </form>
+
+                    <div style={{ marginTop:'1.25rem', paddingTop:'1.25rem', borderTop:'1px solid var(--border)', textAlign:'center' }}>
+                        <p style={{ color:'var(--text-3)', fontSize:'.875rem' }}>
+                            Already have an account?{' '}
+                            <Link to="/login" style={{ color:'#60a5fa', fontWeight:600, textDecoration:'none' }}>Sign in</Link>
+                        </p>
+                    </div>
+                </div>
+            </div>
         </div>
-      </div>
-    </div>
-  );
+    );
 };
 
 export default Register;

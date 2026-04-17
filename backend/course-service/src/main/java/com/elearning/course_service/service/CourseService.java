@@ -12,6 +12,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import org.springframework.web.multipart.MultipartFile;
+import com.elearning.course_service.entity.LessonEntity;
+import com.elearning.course_service.repository.LessonRepository;
+import com.elearning.course_service.dto.LessonDTO;
 
 @Service
 @Transactional
@@ -19,6 +23,9 @@ public class CourseService {
 
     @Autowired
     private CourseRepository courseRepository;
+
+    @Autowired
+    private LessonRepository lessonRepository;
 
     public CourseDTO createCourse(CreateCourseRequest request) {
         CourseEntity course = new CourseEntity();
@@ -132,5 +139,32 @@ public class CourseService {
                 course.getCreatedAt(),
                 course.getUpdatedAt()
         );
+    }
+
+    public LessonDTO uploadLesson(Long courseId, String title, MultipartFile file) throws Exception {
+        if (!courseRepository.existsById(courseId)) {
+            throw new CourseNotFoundException("Course not found with ID: " + courseId);
+        }
+
+        LessonEntity lesson = new LessonEntity();
+        lesson.setCourseId(courseId);
+        lesson.setTitle(title);
+        lesson.setFileName(file.getOriginalFilename());
+        lesson.setFileType(file.getContentType());
+        lesson.setFileData(file.getBytes());
+
+        LessonEntity savedLesson = lessonRepository.save(lesson);
+        return new LessonDTO(savedLesson.getId(), savedLesson.getCourseId(), savedLesson.getTitle(), savedLesson.getFileName(), savedLesson.getFileType(), savedLesson.getCreatedAt());
+    }
+
+    public List<LessonDTO> getCourseLessons(Long courseId) {
+        return lessonRepository.findByCourseId(courseId).stream()
+                .map(lesson -> new LessonDTO(lesson.getId(), lesson.getCourseId(), lesson.getTitle(), lesson.getFileName(), lesson.getFileType(), lesson.getCreatedAt()))
+                .collect(Collectors.toList());
+    }
+
+    public LessonEntity getLessonFile(Long lessonId) {
+        return lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lesson not found with ID: " + lessonId));
     }
 }

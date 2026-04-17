@@ -11,6 +11,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import com.elearning.exam_service.dto.QuestionDTO;
+import com.elearning.exam_service.dto.SubmitExamRequest;
+import com.elearning.exam_service.dto.ExamResultDTO;
 
 @RestController
 @RequestMapping("/api/exams")
@@ -56,5 +59,23 @@ public class ExamController {
     public ResponseEntity<Void> deleteExam(@PathVariable Long id) {
         examService.deleteExam(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+    
+    @PostMapping("/{id}/questions")
+    public ResponseEntity<QuestionDTO> addQuestion(@PathVariable Long id, @Valid @RequestBody QuestionDTO request) {
+        QuestionDTO question = examService.addQuestion(id, request);
+        return new ResponseEntity<>(question, HttpStatus.CREATED);
+    }
+    
+    @GetMapping("/{id}/questions")
+    public ResponseEntity<List<QuestionDTO>> getExamQuestions(@PathVariable Long id) {
+        List<QuestionDTO> questions = examService.getExamQuestions(id);
+        return new ResponseEntity<>(questions, HttpStatus.OK);
+    }
+    
+    @PostMapping("/{id}/submit")
+    public ResponseEntity<ExamResultDTO> submitExam(@PathVariable Long id, @Valid @RequestBody SubmitExamRequest request) {
+        ExamResultDTO result = examService.submitExam(id, request);
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

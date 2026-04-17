@@ -70,6 +70,8 @@ services:
       SPRING_DATASOURCE_USERNAME: tagam
       SPRING_DATASOURCE_PASSWORD: tagam123
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-service:8761/eureka/
+      SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE: 50MB
+      SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE: 50MB
     depends_on:
       postgres:
         condition: service_healthy

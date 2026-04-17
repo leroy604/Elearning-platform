@@ -4,215 +4,161 @@ import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../context/AuthContext';
 
-interface Course {
-  id: number;
-  title: string;
-  description: string;
-  price: number;
-  instructor: string;
-}
-
-interface Enrollment {
-  id: number;
-  courseId: number;
-  status: string;
-}
+interface Course   { id:number; title:string; description:string; price:number; instructor:string; }
+interface Enrollment { id:number; courseId:number; status:string; }
 
 const DEMO_COURSES: Course[] = [
-  {
-    id: 1,
-    title: 'React Fundamentals',
-    description: 'Build modern UIs with components, hooks, routing, and best practices. Perfect for getting productive fast.',
-    price: 29,
-    instructor: 'Amina K.',
-  },
-  {
-    id: 2,
-    title: 'Java + Spring Boot Microservices',
-    description: 'Design resilient services with discovery, gateway routing, auth, and data persistence. Hands-on and practical.',
-    price: 49,
-    instructor: 'David N.',
-  },
-  {
-    id: 3,
-    title: 'PostgreSQL for Developers',
-    description: 'Data modeling, indexing, queries, and performance tuning—everything you need for real production apps.',
-    price: 39,
-    instructor: 'Sarah M.',
-  },
+  { id:1, title:'React Fundamentals', description:'Build modern UIs with components, hooks, routing, and best practices. Perfect for getting productive fast.', price:29, instructor:'Amina K.' },
+  { id:2, title:'Java + Spring Boot Microservices', description:'Design resilient services with discovery, gateway routing, auth, and data persistence. Hands-on and practical.', price:49, instructor:'David N.' },
+  { id:3, title:'PostgreSQL for Developers', description:'Data modeling, indexing, queries, and performance tuning — everything you need for real production apps.', price:39, instructor:'Sarah M.' },
 ];
 
 const Courses = () => {
-  const [courses, setCourses] = useState<Course[]>([]);
+  const [courses, setCourses]       = useState<Course[]>([]);
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [enrolling, setEnrolling] = useState<number | null>(null);
-
-  const { user, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
+  const [loading, setLoading]       = useState(true);
+  const [enrolling, setEnrolling]   = useState<number|null>(null);
+  const { user, isAuthenticated }   = useAuth();
+  const navigate                    = useNavigate();
 
   useEffect(() => {
-    const fetchData = async () => {
+    const fetch = async () => {
       try {
-        const [coursesRes, enrollmentsRes] = await Promise.all([
+        const [cRes, eRes] = await Promise.all([
           axiosClient.get('/courses'),
-          isAuthenticated && user?.id ? axiosClient.get(`/enrollments/user/${user.id}`) : Promise.resolve({ data: [] })
+          isAuthenticated && user?.id ? axiosClient.get(`/enrollments/user/${user.id}`) : Promise.resolve({ data:[] })
         ]);
-        setCourses(coursesRes.data);
-        setEnrollments(enrollmentsRes.data);
-      } catch (err) {
-        console.warn('Failed to fetch data; showing demo courses.', err);
+        setCourses(cRes.data);
+        setEnrollments(eRes.data);
+      } catch {
         setCourses(DEMO_COURSES);
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     };
-    fetchData();
+    fetch();
   }, [isAuthenticated, user?.id]);
 
   const handleEnroll = async (courseId: number) => {
-    if (!isAuthenticated) {
-      alert('Please login to enroll in courses');
-      navigate('/login');
-      return;
-    }
-
+    if (!isAuthenticated) { navigate('/login'); return; }
     setEnrolling(courseId);
-    const userId = user?.id || 0;
     try {
-      const res = await axiosClient.post('/enrollments', { courseId, userId });
-      const newEnrollment = res.data;
-      setEnrollments([...enrollments, newEnrollment]);
-      
-      // Redirect to payment page with courseId
-      navigate(`/payment/${newEnrollment.id}?courseId=${courseId}`);
+      const res = await axiosClient.post('/enrollments', { courseId, userId: user?.id });
+      setEnrollments([...enrollments, res.data]);
+      navigate(`/payment/${res.data.id}?courseId=${courseId}`);
     } catch (err: unknown) {
-      const message = axios.isAxiosError(err)
-        ? err.response?.data?.message
-        : err instanceof Error
-        ? err.message
-        : 'Unknown error';
-      alert(`❌ Enrollment failed: ${message}`);
-    } finally {
-      setEnrolling(null);
-    }
+      const msg = axios.isAxiosError(err) ? err.response?.data?.message : err instanceof Error ? err.message : 'Unknown error';
+      alert(`Enrollment failed: ${msg}`);
+    } finally { setEnrolling(null); }
   };
 
-  const getEnrollmentForCourse = (courseId: number) => {
-    return enrollments.find(e => e.courseId === courseId);
-  };
+  const getEnrollment = (id:number) => enrollments.find(e => e.courseId === id);
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="spinner mx-auto mb-4"></div>
-          <p className="text-white/80 text-lg font-medium">Loading amazing courses...</p>
-        </div>
+  if (loading) return (
+    <div className="center-screen">
+      <div style={{ textAlign:'center' }}>
+        <div className="spinner" style={{ width:32, height:32, borderWidth:3, margin:'0 auto 1rem' }} />
+        <p style={{ color:'var(--text-2)' }}>Loading courses…</p>
       </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="courses-wrapper">
-      {/* Hero Section */}
-      <div className="hero-section text-center mb-12 animate-fade-in">
-        <h1 className="hero-title mb-4">
-          Discover Your Next Learning Adventure
-        </h1>
-        <p className="hero-subtitle text-white/80">
-          Explore our curated collection of courses designed to help you master new skills and advance your career.
+      {/* Hero */}
+      <div className="hero-section animate-fade-in" style={{ maxWidth:1200, margin:'0 auto' }}>
+        <h1 className="hero-title">Discover Your Next<br />Learning Adventure</h1>
+        <p className="hero-subtitle">
+          Explore our curated collection designed to help you master new skills and advance your career — at your own pace.
         </p>
 
-        {/* Stats */}
-        <div className="stats-grid max-w-4xl mx-auto mt-12">
-          <div className="stat-card animate-slide-in">
-            <div className="stat-number">{courses.length}+</div>
-            <div className="stat-label">Courses Available</div>
-          </div>
-          <div className="stat-card animate-slide-in" style={{ animationDelay: '0.1s' }}>
-            <div className="stat-number">10K+</div>
-            <div className="stat-label">Students Learning</div>
-          </div>
-          <div className="stat-card animate-slide-in" style={{ animationDelay: '0.2s' }}>
-            <div className="stat-number">4.9★</div>
-            <div className="stat-label">Average Rating</div>
-          </div>
+        <div className="stats-grid">
+          {[
+            { num:`${courses.length}+`, label:'Courses Available' },
+            { num:'10K+', label:'Students Learning' },
+            { num:'4.9★', label:'Average Rating' },
+          ].map(s => (
+            <div key={s.label} className="stat-card animate-slide-up">
+              <div className="stat-number">{s.num}</div>
+              <div className="stat-label">{s.label}</div>
+            </div>
+          ))}
         </div>
       </div>
 
-      {/* Courses Grid */}
-      <div className="max-w-7xl mx-auto">
-        <div className="courses-grid">
-          {courses.map((course, index) => {
-            const enrollment = getEnrollmentForCourse(course.id);
-            const isCompleted = enrollment?.status === 'COMPLETED';
-            const isPending = enrollment?.status === 'PENDING';
+      {/* Grid */}
+      <div style={{ maxWidth:1200, margin:'0 auto' }}>
+        {courses.length === 0 ? (
+          <div style={{ textAlign:'center', padding:'4rem 1rem' }}>
+            <div style={{ width:48, height:48, borderRadius:12, background:'rgba(255,255,255,.05)', border:'1px solid var(--border)', display:'grid', placeItems:'center', margin:'0 auto 1rem' }}>
+              <svg width="22" height="22" fill="none" stroke="var(--text-3)" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+              </svg>
+            </div>
+            <h3 style={{ fontWeight:700, marginBottom:'.5rem' }}>No courses yet</h3>
+            <p style={{ color:'var(--text-2)' }}>Check back soon for new learning opportunities!</p>
+          </div>
+        ) : (
+          <div className="courses-grid">
+            {courses.map((course, i) => {
+              const enrollment = getEnrollment(course.id);
+              const isCompleted = enrollment?.status === 'COMPLETED';
+              const isPending   = enrollment?.status === 'PENDING';
 
-            return (
-              <div
-                key={course.id}
-                className="course-card animate-fade-in"
-                style={{ animationDelay: `${index * 0.1}s` }}
-              >
-                <div className="course-header">
-                  <h3 className="course-title">{course.title}</h3>
-                  <div className="course-price">${course.price}</div>
-                </div>
-
-                <div className="course-content">
-                  <p className="course-description">{course.description}</p>
-
-                  <div className="course-meta">
-                    <div className="course-instructor">
-                      <div className="instructor-avatar">
-                        {course.instructor?.charAt(0).toUpperCase() || 'U'}
-                      </div>
-                      <span>{course.instructor || 'Unknown Instructor'}</span>
-                    </div>
+              return (
+                <div key={course.id} className="course-card animate-slide-up" style={{ animationDelay:`${i*0.07}s` }}>
+                  {/* Card header */}
+                  <div className="course-header">
+                    <div className="course-title">{course.title}</div>
+                    <div className="course-price">${course.price}</div>
                   </div>
 
-                  {isCompleted ? (
-                    <button
-                      onClick={() => navigate(`/course/${course.id}/dashboard`)}
-                      className="enroll-button bg-green-600 hover:bg-green-700"
-                    >
-                      🎓 Enter Course
-                    </button>
-                  ) : isPending ? (
-                    <button
-                      onClick={() => navigate(`/payment/${enrollment.id}?courseId=${course.id}`)}
-                      className="enroll-button bg-yellow-600 hover:bg-yellow-700"
-                    >
-                      💳 Complete Payment
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => handleEnroll(course.id)}
-                      disabled={enrolling === course.id}
-                      className="enroll-button disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {enrolling === course.id ? (
-                        <div className="flex items-center justify-center">
-                          <div className="spinner w-5 h-5 mr-2"></div>
-                          Enrolling...
-                        </div>
-                      ) : (
-                        '🚀 Enroll Now'
-                      )}
-                    </button>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+                  {/* Card body */}
+                  <div className="course-content">
+                    <p className="course-description">{course.description}</p>
 
-        {courses.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-4xl mb-4">📚</div>
-            <h3 className="text-2xl font-bold text-white mb-2">No courses available yet</h3>
-            <p className="text-white/70">Check back soon for new learning opportunities!</p>
+                    <div className="course-meta">
+                      <div className="course-instructor">
+                        <div className="instructor-avatar">
+                          {course.instructor?.charAt(0).toUpperCase() || 'U'}
+                        </div>
+                        <span>{course.instructor || 'Unknown'}</span>
+                      </div>
+                      {isCompleted && <span className="badge badge-green" style={{ marginLeft:'auto' }}>Enrolled</span>}
+                      {isPending   && <span className="badge badge-amber" style={{ marginLeft:'auto' }}>Pending</span>}
+                    </div>
+
+                    {/* Enroll button — identical height/icon for all states */}
+                    {isCompleted ? (
+                      <button className="enroll-btn enroll-green"
+                        onClick={() => navigate(`/course/${course.id}/dashboard`)}>
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Enter Course
+                      </button>
+                    ) : isPending ? (
+                      <button className="enroll-btn enroll-amber"
+                        onClick={() => navigate(`/payment/${enrollment!.id}?courseId=${course.id}`)}>
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Complete Payment
+                      </button>
+                    ) : (
+                      <button className="enroll-btn enroll-blue"
+                        disabled={enrolling === course.id}
+                        onClick={() => handleEnroll(course.id)}>
+                        {enrolling === course.id
+                          ? <><div className="spinner" />Enrolling…</>
+                          : <><svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                            </svg>Enroll Now</>
+                        }
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -220,4 +166,4 @@ const Courses = () => {
   );
 };
 
-export default Courses;
+export default Courses;

@@ -11,6 +11,7 @@ interface AuthContextType {
   register: (userData: RegisterRequest) => Promise<void>;
   logout: () => void;
   isAuthenticated: boolean;
+  isInstructor: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -33,22 +34,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing token on app load
     const storedToken = localStorage.getItem('token');
     const storedFullName = localStorage.getItem('fullName');
+    const storedRole = localStorage.getItem('role');
+    const storedUserId = localStorage.getItem('userId');
 
     if (storedToken && storedFullName) {
-      // For now, we'll trust the stored token
-      // In a real app, you'd validate the token with the backend
       setToken(storedToken);
-      // We don't have full user data stored, so we'll set a basic user object
       setUser({
-        id: 0,
+        id: Number(storedUserId) || 0,
         email: '',
         username: '',
         firstName: storedFullName.split(' ')[0] || '',
         lastName: storedFullName.split(' ')[1] || '',
-        role: 'STUDENT',
+        role: (storedRole as 'STUDENT' | 'INSTRUCTOR') || 'STUDENT',
         enabled: true,
         createdAt: '',
         updatedAt: ''
@@ -68,6 +67,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       localStorage.setItem('token', authToken);
       localStorage.setItem('fullName', `${userData.firstName} ${userData.lastName}`.trim());
+      localStorage.setItem('role', userData.role || 'STUDENT');
+      localStorage.setItem('userId', String(userData.id || 0));
     } catch (error) {
       throw error;
     } finally {
@@ -86,6 +87,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       localStorage.setItem('token', authToken);
       localStorage.setItem('fullName', `${userResponse.firstName} ${userResponse.lastName}`.trim());
+      localStorage.setItem('role', userResponse.role || 'STUDENT');
+      localStorage.setItem('userId', String(userResponse.id || 0));
     } catch (error) {
       throw error;
     } finally {
@@ -98,6 +101,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setToken(null);
     localStorage.removeItem('token');
     localStorage.removeItem('fullName');
+    localStorage.removeItem('role');
+    localStorage.removeItem('userId');
   };
 
   const value: AuthContextType = {
@@ -107,7 +112,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     login,
     register,
     logout,
-    isAuthenticated: !!token && !!user
+    isAuthenticated: !!token && !!user,
+    isInstructor: user?.role === 'INSTRUCTOR'
   };
 
   return (

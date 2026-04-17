@@ -11,6 +11,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import org.springframework.web.multipart.MultipartFile;
+import com.elearning.course_service.dto.LessonDTO;
+import com.elearning.course_service.entity.LessonEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 
 @RestController
 @RequestMapping("/api/courses")
@@ -76,5 +81,36 @@ public class CourseController {
     public ResponseEntity<Void> deleteCourse(@PathVariable Long id) {
         courseService.deleteCourse(id);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
+    }
+
+    @PostMapping(value = "/{courseId}/lessons", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<LessonDTO> uploadLesson(
+            @PathVariable Long courseId,
+            @RequestParam("title") String title,
+            @RequestParam("file") MultipartFile file) {
+        try {
+            LessonDTO lesson = courseService.uploadLesson(courseId, title, file);
+            return new ResponseEntity<>(lesson, HttpStatus.CREATED);
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{courseId}/lessons")
+    public ResponseEntity<List<LessonDTO>> getCourseLessons(@PathVariable Long courseId) {
+        return new ResponseEntity<>(courseService.getCourseLessons(courseId), HttpStatus.OK);
+    }
+
+    @GetMapping("/lessons/{lessonId}/download")
+    public ResponseEntity<byte[]> downloadLesson(@PathVariable Long lessonId) {
+        try {
+            LessonEntity lesson = courseService.getLessonFile(lessonId);
+            return ResponseEntity.ok()
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + lesson.getFileName() + "\"")
+                    .contentType(MediaType.parseMediaType(lesson.getFileType()))
+                    .body(lesson.getFileData());
+        } catch (Exception e) {
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        }
     }
 }
