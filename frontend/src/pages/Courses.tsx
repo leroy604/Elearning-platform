@@ -18,7 +18,7 @@ const Courses = () => {
   const [enrollments, setEnrollments] = useState<Enrollment[]>([]);
   const [loading, setLoading]       = useState(true);
   const [enrolling, setEnrolling]   = useState<number|null>(null);
-  const { user, isAuthenticated }   = useAuth();
+  const { user, isAuthenticated, isInstructor } = useAuth();
   const navigate                    = useNavigate();
 
   useEffect(() => {
@@ -26,7 +26,7 @@ const Courses = () => {
       try {
         const [cRes, eRes] = await Promise.all([
           axiosClient.get('/courses'),
-          isAuthenticated && user?.id ? axiosClient.get(`/enrollments/user/${user.id}`) : Promise.resolve({ data:[] })
+          isAuthenticated && user?.id && !isInstructor ? axiosClient.get(`/enrollments/user/${user.id}`) : Promise.resolve({ data:[] })
         ]);
         setCourses(cRes.data);
         setEnrollments(eRes.data);
@@ -35,10 +35,11 @@ const Courses = () => {
       } finally { setLoading(false); }
     };
     fetch();
-  }, [isAuthenticated, user?.id]);
+  }, [isAuthenticated, user?.id, isInstructor]);
 
   const handleEnroll = async (courseId: number) => {
     if (!isAuthenticated) { navigate('/login'); return; }
+    if (isInstructor) { alert('Instructors cannot enroll in courses.'); return; }
     setEnrolling(courseId);
     try {
       const res = await axiosClient.post('/enrollments', { courseId, userId: user?.id });
@@ -122,12 +123,20 @@ const Courses = () => {
                         </div>
                         <span>{course.instructor || 'Unknown'}</span>
                       </div>
-                      {isCompleted && <span className="badge badge-green" style={{ marginLeft:'auto' }}>Enrolled</span>}
-                      {isPending   && <span className="badge badge-amber" style={{ marginLeft:'auto' }}>Pending</span>}
+                      {!isInstructor && isCompleted && <span className="badge badge-green" style={{ marginLeft:'auto' }}>Enrolled</span>}
+                      {!isInstructor && isPending   && <span className="badge badge-amber" style={{ marginLeft:'auto' }}>Pending</span>}
                     </div>
 
                     {/* Enroll button — identical height/icon for all states */}
-                    {isCompleted ? (
+                    {isInstructor ? (
+                      <button className="enroll-btn enroll-blue"
+                        onClick={() => navigate(`/course/${course.id}/dashboard`)}>
+                        <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                        Enter Course
+                      </button>
+                    ) : isCompleted ? (
                       <button className="enroll-btn enroll-green"
                         onClick={() => navigate(`/course/${course.id}/dashboard`)}>
                         <svg width="15" height="15" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -163,6 +172,7 @@ const Courses = () => {
         )}
       </div>
     </div>
+
   );
 };
 

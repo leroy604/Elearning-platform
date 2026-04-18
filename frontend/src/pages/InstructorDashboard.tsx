@@ -4,14 +4,16 @@ import { useAuth } from '../context/AuthContext';
 
 interface Course { id:number; title:string; description:string; price:number; instructor:string; }
 interface Exam   { id:number; courseId:number; title:string; }
+interface User   { id:number; firstName:string; lastName:string; email:string; role:string; }
 
-type Panel = 'course' | 'exam' | 'lesson' | 'question';
+type Panel = 'course' | 'exam' | 'lesson' | 'question' | 'users';
 
 const PANELS: { key: Panel; label: string; icon: JSX.Element }[] = [
     { key:'course',   label:'New Course',     icon:<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
     { key:'exam',     label:'Set Exam',       icon:<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg> },
     { key:'lesson',   label:'Upload Lesson',  icon:<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg> },
     { key:'question', label:'Add Question',   icon:<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
+    { key:'users',    label:'Manage Users',   icon:<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg> },
 ];
 
 const Label = ({ children }: { children: string }) => (
@@ -24,6 +26,7 @@ const InstructorDashboard = () => {
     const { user } = useAuth();
     const [courses, setCourses]   = useState<Course[]>([]);
     const [exams,   setExams]     = useState<Exam[]>([]);
+    const [users,   setUsers]     = useState<User[]>([]);
     const [loading, setLoading]   = useState(true);
     const [panel,   setPanel]     = useState<Panel>('course');
     const [status,  setStatus]    = useState('');
@@ -38,12 +41,20 @@ const InstructorDashboard = () => {
         if (!user?.id) return;
         (async () => {
             try {
-                const res = await axiosClient.get(`/courses/instructor/${user.id}`);
-                setCourses(res.data);
+                const [cRes, uRes] = await Promise.all([
+                    axiosClient.get(`/courses/instructor/${user.id}`).catch(() => axiosClient.get('/courses')), // Fallback to all if instructor filter fails or acting as admin
+                    axiosClient.get('/users').catch(() => ({ data: [] }))
+                ]);
+                
+                setCourses(cRes.data);
+                setUsers(uRes.data);
+
                 const examList: Exam[] = [];
-                for (const c of res.data) {
-                    const eRes = await axiosClient.get(`/exams/course/${c.id}`);
-                    examList.push(...eRes.data);
+                for (const c of cRes.data) {
+                    try {
+                        const eRes = await axiosClient.get(`/exams/course/${c.id}`);
+                        examList.push(...eRes.data);
+                    } catch { /* skip */ }
                 }
                 setExams(examList);
             } catch (err) { console.error(err); }
@@ -109,6 +120,15 @@ const InstructorDashboard = () => {
         } catch { flash('✗ Failed to delete course.'); }
     };
 
+    const handleDeleteUser = async (id: number) => {
+        if (!window.confirm('Delete this user account? This action is permanent.')) return;
+        try {
+            await axiosClient.delete(`/users/${id}`);
+            setUsers(users.filter(u => u.id !== id));
+            flash('✓ User deleted.');
+        } catch { flash('✗ Failed to delete user.'); }
+    };
+
     const inputCls = 'form-input';
     const selectCls = 'form-select';
 
@@ -121,14 +141,15 @@ const InstructorDashboard = () => {
                     <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:'1rem' }}>
                         <div>
                             <h1 style={{ fontSize:'clamp(1.6rem,3vw,2.25rem)', fontWeight:800, color:'var(--text)', marginBottom:'.4rem' }}>
-                                Instructor Dashboard
+                                Admin Dashboard
                             </h1>
-                            <p style={{ color:'var(--text-2)', fontSize:'.9rem' }}>Manage your courses, exams, and curriculum from one place.</p>
+                            <p style={{ color:'var(--text-2)', fontSize:'.9rem' }}>Comprehensive management of courses, users, and site content.</p>
                         </div>
                         {/* Stats strip */}
                         <div style={{ display:'flex', gap:.75+'rem' }}>
                             {[
                                 { label:'Courses', value:courses.length, color:'#60a5fa' },
+                                { label:'Users',   value:users.length,   color:'#34d399' },
                                 { label:'Exams',   value:exams.length,   color:'#818cf8' },
                             ].map(s => (
                                 <div key={s.label} style={{ background:'var(--bg-1)', border:'1px solid var(--border)', borderRadius:10, padding:'.625rem 1rem', textAlign:'center', minWidth:72 }}>
@@ -161,7 +182,7 @@ const InstructorDashboard = () => {
                         <div style={{ height:'1px', background:'var(--border)', margin:'.5rem 0' }} />
 
                         <div style={{ padding:'.5rem .875rem' }}>
-                            <p style={{ fontSize:'.7rem', fontWeight:700, color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:'.625rem' }}>My Courses</p>
+                            <p style={{ fontSize:'.7rem', fontWeight:700, color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'.08em', marginBottom:'.625rem' }}>Active Courses</p>
                             {loading ? <div className="spinner" /> : courses.length === 0
                                 ? <p style={{ fontSize:'.8rem', color:'var(--text-3)', fontStyle:'italic' }}>No courses yet</p>
                                 : courses.map(c => (
@@ -345,6 +366,55 @@ const InstructorDashboard = () => {
                                 </form>
                             </>
                         )}
+
+                        {/* ── MANAGE USERS ── */}
+                        {panel === 'users' && (
+                            <>
+                                <h2 className="section-title" style={{ marginBottom:'1.5rem' }}>
+                                    <svg width="18" height="18" fill="none" stroke="#34d399" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+                                    User Management
+                                </h2>
+                                <div style={{ overflowX:'auto' }}>
+                                    <table style={{ width:'100%', borderCollapse:'collapse', fontSize:'.875rem' }}>
+                                        <thead>
+                                            <tr style={{ background:'rgba(255,255,255,.03)', borderBottom:'1px solid var(--border)' }}>
+                                                <th style={{ textAlign:'left', padding:'.75rem 1rem', color:'var(--text-3)', fontWeight:600 }}>User</th>
+                                                <th style={{ textAlign:'left', padding:'.75rem 1rem', color:'var(--text-3)', fontWeight:600 }}>Email</th>
+                                                <th style={{ textAlign:'left', padding:'.75rem 1rem', color:'var(--text-3)', fontWeight:600 }}>Role</th>
+                                                <th style={{ textAlign:'center', padding:'.75rem 1rem', color:'var(--text-3)', fontWeight:600 }}>Actions</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {users.length === 0 ? (
+                                                <tr><td colSpan={4} style={{ textAlign:'center', padding:'2rem', color:'var(--text-3)' }}>No users found.</td></tr>
+                                            ) : users.map(u => (
+                                                <tr key={u.id} style={{ borderBottom:'1px solid var(--border)' }}>
+                                                    <td style={{ padding:'.75rem 1rem' }}>
+                                                        <div style={{ fontWeight:600, color:'var(--text)' }}>{u.firstName} {u.lastName}</div>
+                                                        <div style={{ fontSize:'.7rem', color:'var(--text-3)' }}>ID: {u.id}</div>
+                                                    </td>
+                                                    <td style={{ padding:'.75rem 1rem', color:'var(--text-2)' }}>{u.email}</td>
+                                                    <td style={{ padding:'.75rem 1rem' }}>
+                                                        <span className={`badge ${u.role === 'INSTRUCTOR' ? 'badge-blue' : 'badge-amber'}`} style={{ fontSize:'.65rem' }}>
+                                                            {u.role}
+                                                        </span>
+                                                    </td>
+                                                    <td style={{ padding:'.75rem 1rem', textAlign:'center' }}>
+                                                        <button onClick={() => handleDeleteUser(u.id)}
+                                                            className="btn btn-danger" 
+                                                            style={{ padding:'.35rem .6rem', borderRadius:6, fontSize:'.75rem' }}>
+                                                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                                            Delete
+                                                        </button>
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </>
+                        )}
+
                     </div>
                 </div>
             </div>
