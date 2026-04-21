@@ -3,6 +3,29 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 type Role = 'STUDENT' | 'INSTRUCTOR';
+interface FieldProps {
+    label: string;
+    name: string;
+    value: string;
+    onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    isInstructor: boolean;
+    loading: boolean;
+    placeholder: string;
+    type?: string;
+}
+
+const Field = ({ label, name, value, onChange, isInstructor, loading, placeholder, type = 'text' }: FieldProps) => (
+    <div>
+        <label style={{ fontSize: '.75rem', fontWeight: 600, color: 'var(--text-2)', display: 'block', marginBottom: '.35rem' }}>{label}</label>
+        <input
+            name={name} type={type} placeholder={placeholder}
+            value={value} onChange={onChange}
+            className={`auth-input ${isInstructor ? 'focus-indigo' : ''}`}
+            required disabled={loading}
+        />
+    </div>
+);
+
 
 const Register = () => {
     const { register, isLoading: authLoading } = useAuth();
@@ -37,18 +60,8 @@ const Register = () => {
     const isInstructor = role === 'INSTRUCTOR';
     const submitBg = isInstructor ? 'linear-gradient(135deg,#4f46e5,#6366f1)' : 'linear-gradient(135deg,#1d4ed8,#2563eb)';
     const submitShadow = isInstructor ? '0 4px 20px rgba(99,102,241,.35)' : '0 4px 20px rgba(37,99,235,.35)';
+    const accentBorder = isInstructor ? 'rgba(99,102,241,.55)' : 'rgba(37,99,235,.55)';
 
-    const Field = ({ label, name, type='text', placeholder }: { label:string; name:string; type?:string; placeholder:string }) => (
-        <div>
-            <label style={{ fontSize:'.75rem', fontWeight:600, color:'var(--text-2)', display:'block', marginBottom:'.35rem' }}>{label}</label>
-            <input
-                name={name} type={type} placeholder={placeholder}
-                value={(form as any)[name]} onChange={handleChange}
-                className={`auth-input ${isInstructor ? 'focus-indigo':''}`}
-                required disabled={loading}
-            />
-        </div>
-    );
 
     return (
         <div className="auth-bg">
@@ -67,7 +80,7 @@ const Register = () => {
                     <p style={{ color:'var(--text-3)', fontSize:'.875rem', marginTop:'.3rem' }}>Join LearnHub and start learning today</p>
                 </div>
 
-                <div className="auth-glass">
+                <div className="auth-glass" style={{ borderColor: accentBorder }}>
                     {/* Role selector */}
                     <p style={{ fontSize:'.7rem', fontWeight:700, color:'var(--text-3)', textTransform:'uppercase', letterSpacing:'.1em', marginBottom:'.625rem' }}>
                         I want to join as
@@ -111,11 +124,11 @@ const Register = () => {
 
                     <form onSubmit={submit} style={{ display:'flex', flexDirection:'column', gap:'.75rem' }}>
                         <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:'.75rem' }}>
-                            <Field label="First Name" name="firstName" placeholder="John" />
-                            <Field label="Last Name"  name="lastName"  placeholder="Doe"  />
+                            <Field label="First Name" name="firstName" placeholder="John" value={form.firstName} onChange={handleChange} isInstructor={isInstructor} loading={loading} />
+                            <Field label="Last Name"  name="lastName"  placeholder="Doe"  value={form.lastName}  onChange={handleChange} isInstructor={isInstructor} loading={loading} />
                         </div>
-                        <Field label="Username" name="username" placeholder="johndoe123" />
-                        <Field label="Email Address" name="email" type="email" placeholder="john@example.com" />
+                        <Field label="Username" name="username" placeholder="johndoe123" value={form.username} onChange={handleChange} isInstructor={isInstructor} loading={loading} />
+                        <Field label="Email Address" name="email" type="email" placeholder="john@example.com" value={form.email} onChange={handleChange} isInstructor={isInstructor} loading={loading} />
 
                         {/* Password with toggle */}
                         <div>

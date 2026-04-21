@@ -57,7 +57,7 @@ const Login = () => {
                     <p style={{ color: 'var(--text-3)', fontSize: '.875rem', marginTop: '.3rem' }}>Sign in to your account</p>
                 </div>
 
-                <div className="auth-glass">
+                <div className="auth-glass" style={{ borderColor: accentBorder }}>
                     {/* Role selector */}
                     <p style={{ fontSize: '.7rem', fontWeight: 700, color: 'var(--text-3)', textTransform: 'uppercase', letterSpacing: '.1em', marginBottom: '.625rem' }}>
                         I am signing in as

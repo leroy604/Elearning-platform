@@ -3,6 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../context/AuthContext';
+import Landing from './Landing';
 
 interface Course   { id:number; title:string; description:string; price:number; instructor:string; }
 interface Enrollment { id:number; courseId:number; status:string; }
@@ -61,6 +62,8 @@ const Courses = () => {
       </div>
     </div>
   );
+
+  if (!isAuthenticated) return <Landing />;
 
   return (
     <div className="courses-wrapper">

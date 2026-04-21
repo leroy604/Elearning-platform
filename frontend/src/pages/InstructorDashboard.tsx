@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import axiosClient from '../api/axiosClient';
 import { useAuth } from '../context/AuthContext';
 
@@ -8,7 +8,7 @@ interface User   { id:number; firstName:string; lastName:string; email:string; r
 
 type Panel = 'course' | 'exam' | 'lesson' | 'question' | 'users';
 
-const PANELS: { key: Panel; label: string; icon: JSX.Element }[] = [
+const PANELS: { key: Panel; label: string; icon: React.ReactNode }[] = [
     { key:'course',   label:'New Course',     icon:<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg> },
     { key:'exam',     label:'Set Exam',       icon:<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg> },
     { key:'lesson',   label:'Upload Lesson',  icon:<svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" /></svg> },
@@ -23,7 +23,7 @@ const Label = ({ children }: { children: string }) => (
 );
 
 const InstructorDashboard = () => {
-    const { user } = useAuth();
+    const { user, isAdmin } = useAuth();
     const [courses, setCourses]   = useState<Course[]>([]);
     const [exams,   setExams]     = useState<Exam[]>([]);
     const [users,   setUsers]     = useState<User[]>([]);
@@ -120,6 +120,16 @@ const InstructorDashboard = () => {
         } catch { flash('✗ Failed to delete course.'); }
     };
 
+    const handleRoleUpdate = async (id: number, newRole: string) => {
+        const verb = newRole === 'INSTRUCTOR' ? 'Promote' : 'Demote';
+        if (!window.confirm(`${verb} this user to ${newRole}?`)) return;
+        try {
+            await axiosClient.put(`/users/${id}`, { role: newRole });
+            setUsers(users.map(u => u.id === id ? { ...u, role: newRole } : u));
+            flash(`✓ User ${verb.toLowerCase()}d successfully.`);
+        } catch { flash(`✗ Failed to update user role.`); }
+    };
+
     const handleDeleteUser = async (id: number) => {
         if (!window.confirm('Delete this user account? This action is permanent.')) return;
         try {
@@ -141,9 +151,13 @@ const InstructorDashboard = () => {
                     <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', flexWrap:'wrap', gap:'1rem' }}>
                         <div>
                             <h1 style={{ fontSize:'clamp(1.6rem,3vw,2.25rem)', fontWeight:800, color:'var(--text)', marginBottom:'.4rem' }}>
-                                Admin Dashboard
+                                {isAdmin ? 'Admin Dashboard' : 'Instructor Dashboard'}
                             </h1>
-                            <p style={{ color:'var(--text-2)', fontSize:'.9rem' }}>Comprehensive management of courses, users, and site content.</p>
+                            <p style={{ color:'var(--text-2)', fontSize:'.9rem' }}>
+                                {isAdmin 
+                                    ? 'Comprehensive management of courses, users, and site content.' 
+                                    : 'Manage your courses, exams, and teaching materials.'}
+                            </p>
                         </div>
                         {/* Stats strip */}
                         <div style={{ display:'flex', gap:.75+'rem' }}>
@@ -172,7 +186,7 @@ const InstructorDashboard = () => {
 
                     {/* ── Sidebar nav ── */}
                     <div style={{ display:'flex', flexDirection:'column', gap:'.375rem' }}>
-                        {PANELS.map(p => (
+                        {PANELS.filter(p => isAdmin || p.key !== 'users').map(p => (
                             <button key={p.key} onClick={() => setPanel(p.key)}
                                 style={{ display:'flex', alignItems:'center', gap:'.625rem', padding:'.625rem .875rem', borderRadius:9, border:'none', cursor:'pointer', fontWeight:600, fontSize:'.875rem', textAlign:'left', transition:'all .2s', background: panel===p.key ? 'rgba(37,99,235,.14)' : 'transparent', color: panel===p.key ? '#60a5fa' : 'var(--text-2)' }}>
                                 {p.icon} {p.label}
@@ -400,12 +414,26 @@ const InstructorDashboard = () => {
                                                         </span>
                                                     </td>
                                                     <td style={{ padding:'.75rem 1rem', textAlign:'center' }}>
-                                                        <button onClick={() => handleDeleteUser(u.id)}
-                                                            className="btn btn-danger" 
-                                                            style={{ padding:'.35rem .6rem', borderRadius:6, fontSize:'.75rem' }}>
-                                                            <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
-                                                            Delete
-                                                        </button>
+                                                        <div style={{ display:'flex', gap:'.5rem', justifyContent:'center' }}>
+                                                            {u.role === 'STUDENT' ? (
+                                                                <button onClick={() => handleRoleUpdate(u.id, 'INSTRUCTOR')}
+                                                                    className="btn btn-indigo"
+                                                                    style={{ padding:'.35rem .6rem', borderRadius:6, fontSize:'.75rem' }}>
+                                                                    Promote
+                                                                </button>
+                                                            ) : (
+                                                                <button onClick={() => handleRoleUpdate(u.id, 'STUDENT')}
+                                                                    className="btn btn-ghost"
+                                                                    style={{ padding:'.35rem .6rem', borderRadius:6, fontSize:'.75rem', color:'#d97706', borderColor:'rgba(217,119,6,.3)' }}>
+                                                                    Demote
+                                                                </button>
+                                                            )}
+                                                            <button onClick={() => handleDeleteUser(u.id)}
+                                                                className="btn btn-danger" 
+                                                                style={{ padding:'.35rem .6rem', borderRadius:6, fontSize:'.75rem' }}>
+                                                                Delete
+                                                            </button>
+                                                        </div>
                                                     </td>
                                                 </tr>
                                             ))}

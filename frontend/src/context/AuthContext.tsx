@@ -12,6 +12,7 @@ interface AuthContextType {
   logout: () => void;
   isAuthenticated: boolean;
   isInstructor: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -47,7 +48,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         username: '',
         firstName: storedFullName.split(' ')[0] || '',
         lastName: storedFullName.split(' ')[1] || '',
-        role: (storedRole as 'STUDENT' | 'INSTRUCTOR') || 'STUDENT',
+        role: (storedRole as 'STUDENT' | 'INSTRUCTOR' | 'ADMIN') || 'STUDENT',
         enabled: true,
         createdAt: '',
         updatedAt: ''
@@ -113,7 +114,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     register,
     logout,
     isAuthenticated: !!token && !!user,
-    isInstructor: user?.role === 'INSTRUCTOR'
+    isInstructor: user?.role === 'INSTRUCTOR' || user?.role === 'ADMIN',
+    isAdmin: user?.role === 'ADMIN'
   };
 
   return (
