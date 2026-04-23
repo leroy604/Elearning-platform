@@ -2,8 +2,12 @@ package com.elearning.exam_service.service;
 
 import com.elearning.exam_service.dto.CreateExamRequest;
 import com.elearning.exam_service.dto.ExamDTO;
+import com.elearning.exam_service.dto.ExamResultDTO;
+import com.elearning.exam_service.dto.SubmitExamRequest;
 import com.elearning.exam_service.entity.ExamEntity;
+import com.elearning.exam_service.entity.QuestionEntity;
 import com.elearning.exam_service.repository.ExamRepository;
+import com.elearning.exam_service.repository.QuestionRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -12,7 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -24,11 +28,15 @@ public class ExamServiceTest {
     @Mock
     private ExamRepository examRepository;
 
+    @Mock
+    private QuestionRepository questionRepository;
+
     @InjectMocks
     private ExamService examService;
 
     private CreateExamRequest createRequest;
     private ExamEntity examEntity;
+    private List<QuestionEntity> questionEntities;
 
     @BeforeEach
     void setUp() {
@@ -49,17 +57,26 @@ public class ExamServiceTest {
         examEntity.setPassingScore(80);
         examEntity.setCourseId(1L);
         examEntity.setCreatedAt(LocalDateTime.now());
+
+        // Create 4 questions — correct answer index is 0 for all
+        questionEntities = new ArrayList<>();
+        for (int i = 1; i <= 4; i++) {
+            QuestionEntity q = new QuestionEntity();
+            q.setId((long) i);
+            q.setExamId(1L);
+            q.setContent("Question " + i);
+            q.setOptions(Arrays.asList("Option A", "Option B", "Option C"));
+            q.setCorrectAnswerIndex(0);
+            questionEntities.add(q);
+        }
     }
 
     @Test
     void createExam_ShouldReturnExamDTO() {
-        // Arrange
         when(examRepository.save(any(ExamEntity.class))).thenReturn(examEntity);
 
-        // Act
         ExamDTO result = examService.createExam(createRequest);
 
-        // Assert
         assertNotNull(result);
         assertEquals("Final Exam", result.getTitle());
         assertEquals(10, result.getTotalQuestions());
@@ -69,13 +86,10 @@ public class ExamServiceTest {
 
     @Test
     void getExamById_ShouldReturnExamDTO_WhenExists() {
-        // Arrange
         when(examRepository.findById(1L)).thenReturn(Optional.of(examEntity));
 
-        // Act
         ExamDTO result = examService.getExamById(1L);
 
-        // Assert
         assertNotNull(result);
         assertEquals(1L, result.getId());
         assertEquals("Final Exam", result.getTitle());
@@ -83,22 +97,69 @@ public class ExamServiceTest {
 
     @Test
     void getExamById_ShouldThrowException_WhenNotExists() {
-        // Arrange
         when(examRepository.findById(99L)).thenReturn(Optional.empty());
 
-        // Act & Assert
         assertThrows(RuntimeException.class, () -> examService.getExamById(99L));
     }
 
     @Test
     void deleteExam_ShouldCallRepository_WhenExists() {
-        // Arrange
         when(examRepository.existsById(1L)).thenReturn(true);
 
-        // Act
         examService.deleteExam(1L);
 
-        // Assert
         verify(examRepository, times(1)).deleteById(1L);
+    }
+
+    // ==================== GRADE CALCULATION TESTS ====================
+
+    @Test
+    void submitExam_ShouldCalculatePassingGrade_WhenAllAnswersCorrect() {
+        // Arrange — all 4 answers correct (index 0)
+        Map<Long, Integer> answers = new HashMap<>();
+        answers.put(1L, 0);
+        answers.put(2L, 0);
+        answers.put(3L, 0);
+        answers.put(4L, 0);
+
+        SubmitExamRequest request = new SubmitExamRequest();
+        request.setAnswers(answers);
+
+        when(examRepository.findById(1L)).thenReturn(Optional.of(examEntity));
+        when(questionRepository.findByExamId(1L)).thenReturn(questionEntities);
+
+        // Act
+        ExamResultDTO result = examService.submitExam(1L, request);
+
+        // Assert — 4/4 correct = 100%, threshold is 80% ? PASSED
+        assertEquals(4, result.getTotalQuestions());
+        assertEquals(4, result.getCorrectAnswers());
+        assertEquals(100, result.getScorePercentage());
+        assertTrue(result.isPassed());
+    }
+
+    @Test
+    void submitExam_ShouldCalculateFailingGrade_WhenBelowPassingScore() {
+        // Arrange — only 2 out of 4 correct (50%)
+        Map<Long, Integer> answers = new HashMap<>();
+        answers.put(1L, 0); // correct
+        answers.put(2L, 0); // correct
+        answers.put(3L, 1); // wrong
+        answers.put(4L, 1); // wrong
+
+        SubmitExamRequest request = new SubmitExamRequest();
+        request.setAnswers(answers);
+
+        when(examRepository.findById(1L)).thenReturn(Optional.of(examEntity));
+        when(questionRepository.findByExamId(1L)).thenReturn(questionEntities);
+
+        // Act
+        ExamResultDTO result = examService.submitExam(1L, request);
+
+        // Assert — 2/4 = 50%, threshold is 80% ? FAILED
+        assertEquals(4, result.getTotalQuestions());
+        assertEquals(2, result.getCorrectAnswers());
+        assertEquals(50, result.getScorePercentage());
+        assertFalse(result.isPassed());
     }
 }

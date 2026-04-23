@@ -1,0 +1,16 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/elearning
+    username: elearn
+    password: elearn123
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+
+eureka:
+  client:
+    enabled: false
+
+stripe:
+  secret-key: sk_test_placeholder
+  webhook-secret: whsec_placeholder
