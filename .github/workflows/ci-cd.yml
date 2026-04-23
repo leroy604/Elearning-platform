@@ -2,9 +2,9 @@ name: E-Learning Platform CI/CD
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [ main, develop, tagam ]
   pull_request:
-    branches: [ main ]
+    branches: [ main, tagam ]
 
 jobs:
   test-and-build:
@@ -37,15 +37,17 @@ jobs:
           distribution: 'temurin'
           cache: maven
 
-      - name: Run Backend Unit Tests (especially Exam Service)
+      - name: Run Backend Unit Tests (Exam Service)
         run: |
           cd backend/exam-service
           ./mvnw test --no-transfer-progress
 
       - name: Build All Backend Services
         run: |
-          cd backend
-          ./mvnw clean package -DskipTests -B --no-transfer-progress
+          cd backend/user-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
+          cd ../../backend/course-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
+          cd ../../backend/exam-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
+          cd ../../backend/payment-service/payment-service/payment-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
 
       # ================== FRONTEND BUILD ==================
       - name: Set up Node.js
