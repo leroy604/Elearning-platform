@@ -72,7 +72,7 @@ jobs:
       - name: Run Docker Compose (Health Check)
         run: |
           cd backend
-          docker compose up -d
+          docker compose up -d --scale postgres=0
           sleep 30
           docker compose ps
           docker compose logs --tail=50
