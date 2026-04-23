@@ -43,11 +43,11 @@ jobs:
           ./mvnw test --no-transfer-progress
 
       - name: Build All Backend Services
-        run: |
-          cd backend/user-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
-          cd ../../backend/course-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
-          cd ../../backend/exam-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
-          cd ../../backend/payment-service/payment-service/payment-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
+              run: |
+                cd backend/user-service/user-service/user-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
+                cd $GITHUB_WORKSPACE/backend/course-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
+                cd $GITHUB_WORKSPACE/backend/exam-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
+                cd $GITHUB_WORKSPACE/backend/payment-service/payment-service/payment-service && ./mvnw clean package -DskipTests -B --no-transfer-progress
 
       # ================== FRONTEND BUILD ==================
       - name: Set up Node.js
